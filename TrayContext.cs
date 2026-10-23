@@ -14,6 +14,7 @@ public sealed class TrayContext : ApplicationContext
 
     public TrayContext(bool fromAutostart)
     {
+        Log.Write($"Starting{(fromAutostart ? " (autostart)" : "")}");
         var settings = Settings.Load();
         if (!settings.FirstRunDone)
         {
