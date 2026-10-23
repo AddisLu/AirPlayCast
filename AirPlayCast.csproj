@@ -26,4 +26,12 @@
     <None Update="app.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- The WebView2 package always references its WPF control too; this WinForms app doesn't use it,
+       and its WindowsBase 5.0 dependency triggers an MSB3277 version-conflict warning. -->
+  <Target Name="RemoveWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+
 </Project>
