@@ -14,8 +14,11 @@ public sealed class Settings
     /// <summary>Put a Yamaha receiver in standby when streaming stops (only if it is still on the AirPlay input).</summary>
     public bool StandbyOnStop { get; set; } = true;
     public bool MuteLocal { get; set; } = true;
-    /// <summary>How far ahead audio is buffered on the receiver. AirPlay's standard is 2000 ms.</summary>
-    public int LatencyMs { get; set; } = 2000;
+    /// <summary>
+    /// How far ahead audio is buffered on the receiver. AirPlay's standard is 2000 ms; shorter keeps
+    /// video in sync but leaves less time to recover lost Wi-Fi packets.
+    /// </summary>
+    public int LatencyMs { get; set; } = 500;
     /// <summary>Master volume (dB) a Yamaha receiver reaches at 100% on the slider; caps how loud the slider can go.</summary>
     public double YamahaMaxDb { get; set; } = -10;
     /// <summary>Set while we hold the local device muted, so a crash can be undone next launch.</summary>

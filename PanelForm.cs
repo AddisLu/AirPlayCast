@@ -94,6 +94,7 @@ public sealed class PanelForm : Form
                 case "toggle": await _ctl.ToggleAsync(); break;
                 case "refresh": await _ctl.RefreshDevicesAsync(); break;
                 case "power": await _ctl.SetReceiverPowerAsync((bool)m["value"]!); break;
+                case "latency": await _ctl.SetLatencyAsync((int)m["value"]!); break;
                 case "device": await _ctl.SelectDeviceAsync((string)m["value"]!); break;
                 case "source": _ctl.SelectSource((string?)m["value"]); break;
                 case "volume": _ctl.SetVolume((double)m["value"]!); break;
@@ -134,6 +135,7 @@ public sealed class PanelForm : Form
             ["volume"] = _ctl.Settings.Volume,
             ["volumeDb"] = _ctl.VolumeDb,
             ["latencyMs"] = _ctl.LatencyMs ?? 0,
+            ["latencySetting"] = _ctl.Settings.LatencyMs,
             ["sources"] = new JsonArray(_ctl.Sources().Select(s => (JsonNode)new JsonObject { ["id"] = s.Id, ["name"] = s.Name }).ToArray()),
             ["source"] = _ctl.Settings.SourceId ?? "",
             ["autostart"] = Autostart.IsEnabled,

@@ -375,6 +375,20 @@ public sealed class StreamController : IDisposable
         if (changed) Notify();
     }
 
+    /// <summary>Changes the receiver-side buffer; an active stream reconnects to apply it.</summary>
+    public async Task SetLatencyAsync(int ms)
+    {
+        ms = Math.Clamp(ms, 200, 2000);
+        if (ms == Settings.LatencyMs) return;
+        Settings.LatencyMs = ms;
+        Settings.Save();
+        Notify();
+        if (Status != StreamStatus.Streaming) return;
+        Log.Write($"Latency changed to {ms} ms, reconnecting");
+        await StopAsync(allowStandby: false);
+        await StartAsync();
+    }
+
     public void SetStandbyOnStop(bool on)
     {
         Settings.StandbyOnStop = on;

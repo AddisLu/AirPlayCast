@@ -74,6 +74,11 @@ select.dev-name option { background: var(--surface); }
 input[type=range] { -webkit-appearance: none; appearance: none; flex-grow: 1; height: 4px; border-radius: 2px; outline: none; background: linear-gradient(to right, var(--accent) var(--p, 40%), #343844 var(--p, 40%)); }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #F4F5F7; border: 4px solid var(--accent); cursor: pointer; }
 input[type=range]:focus-visible { box-shadow: 0 0 0 2px rgba(240, 162, 59, .4); }
+.seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 3px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line-2); }
+.seg button { height: 32px; border: none; border-radius: 6px; background: transparent; color: var(--ink-2); font-size: 12px; }
+.seg button:hover { background: var(--surface-2); }
+.seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.hint { font-size: 11px; color: var(--muted); }
 select.src { height: 38px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface); padding: 0 10px; }
 select.src option { background: var(--surface); }
 
@@ -137,6 +142,16 @@ select.src option { background: var(--surface); }
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0AA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/></svg>
       <input id="vol" type="range" min="0" max="100" value="40">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0AA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="field-head"><span class="label" id="latLabel">延遲</span><span class="hint">越短越即時，Wi‑Fi 不穩時易斷音</span></div>
+    <div class="seg" role="group" aria-labelledby="latLabel">
+      <button data-ms="250" aria-pressed="false">0.25 秒</button>
+      <button data-ms="500" aria-pressed="false">0.5 秒</button>
+      <button data-ms="1000" aria-pressed="false">1 秒</button>
+      <button data-ms="2000" aria-pressed="false">2 秒</button>
     </div>
   </div>
 
@@ -219,7 +234,7 @@ function render(s) {
 
   $('vfd').classList.toggle('on', on || busy);
   $('vfdLeft').textContent = on ? 'AIRPLAY  ▶' : busy ? 'CONNECTING…' : s.status === 'error' ? 'ERROR' : 'STANDBY';
-  $('vfdRight').textContent = on ? `${dbText(s)} · ${(s.latencyMs / 1000).toFixed(1)}s` : busy ? '' : '-- dB';
+  $('vfdRight').textContent = on ? `${dbText(s)} · ${(s.latencyMs / 1000).toFixed(2)}s` : busy ? '' : '-- dB';
   $('msg').textContent = s.message || '';
   $('msg').className = 'msg' + (s.status === 'error' ? '' : ' info');
 
@@ -229,6 +244,7 @@ function render(s) {
   $('mainText').textContent = on ? '停止串流' : busy ? '取消連線' : '開始串流';
 
   if (!dragging) setVolUi(s.volume);
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.ms === s.latencySetting)));
 
   const src = $('src');
   if (document.activeElement !== src) src.replaceChildren(...s.sources.map(x => new Option(x.name, x.id, false, x.id === s.source)));
@@ -260,6 +276,10 @@ function renderLevel(v) {
 $('main').onclick = () => send({ cmd: 'toggle' });
 $('refresh').onclick = () => send({ cmd: 'refresh' });
 $('power').onclick = () => send({ cmd: 'power', value: !(state && state.receiverOn) });
+document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  send({ cmd: 'latency', value: +b.dataset.ms });
+});
 $('quit').onclick = () => send({ cmd: 'quit' });
 $('devSelect').onchange = (e) => send({ cmd: 'device', value: e.target.value });
 $('src').onchange = (e) => send({ cmd: 'source', value: e.target.value });
@@ -290,7 +310,7 @@ if (host) {
 } else {
   // Opened directly in a browser: show sample state.
   render({ status: 'streaming', devices: [{ name: 'RX-V477 B7DA1E', ip: '192.168.72.8', model: 'RX-V477' }], device: 'RX-V477 B7DA1E',
-    volume: 40, latencyMs: 2092, sources: [{ id: '', name: '預設輸出裝置' }], source: '', autostart: true, standbyonstop: true, mutelocal: true, receiverOn: true, version: '1.0', searching: false });
+    volume: 40, latencyMs: 592, latencySetting: 500, sources: [{ id: '', name: '預設輸出裝置' }], source: '', autostart: true, standbyonstop: true, mutelocal: true, receiverOn: true, version: '1.0', searching: false });
   setInterval(() => renderLevel(0.4 + Math.random() * 0.3), 60);
 }
 </script>
