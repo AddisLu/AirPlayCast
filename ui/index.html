@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>AirPlayCast</title>
+<style>
+:root {
+  --accent: #F0A23B; --accent-ink: #1A1206;
+  --bg: #15171C; --surface: #1D2027; --surface-2: #262A33; --line: #272B34; --line-2: #2F333D;
+  --ink: #ECEDEF; --ink-2: #C9CDD4; --muted: #9AA0AA; --off: #3A3F4B;
+  --ok-bg: #16301F; --ok: #5FD38A; --err-bg: #3A1D1A; --err: #F08A7A;
+  --mono: 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 13px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; user-select: none; overflow: hidden; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+
+.head { display: flex; align-items: center; gap: 10px; }
+.logo { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; }
+.title { display: flex; flex-direction: column; flex-grow: 1; }
+.title b { font-size: 15px; font-weight: 600; }
+.title span { font-size: 11px; color: var(--muted); }
+.pill { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 500; }
+.pill i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.streaming { background: var(--ok-bg); color: var(--ok); }
+.pill.connecting { background: #3A2E17; color: var(--accent); }
+.pill.connecting i { animation: blink 1s infinite; }
+.pill.error { background: var(--err-bg); color: var(--err); }
+@keyframes blink { 50% { opacity: .25; } }
+
+.card { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.dev { display: flex; align-items: center; gap: 12px; }
+.dev-ico { width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; }
+.dev-txt { display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0; }
+.dev-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[hidden] { display: none !important; }
+select.dev-name { appearance: none; background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239AA0AA' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 2px center; border: none; border-radius: 4px; padding: 0 20px 0 0; margin: 0; cursor: pointer; }
+select.dev-name:hover { background-color: var(--surface-2); }
+select.dev-name:focus { outline: none; }
+select.dev-name:focus-visible { outline: 2px solid var(--accent); }
+select.dev-name option { background: var(--surface); }
+.dev-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.icon-btn { width: 36px; height: 36px; flex-shrink: 0; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; color: var(--ink-2); display: flex; align-items: center; justify-content: center; }
+.icon-btn:hover { background: var(--surface-2); }
+.icon-btn.spin svg { animation: spin 0.9s linear infinite; }
+.icon-btn.power[aria-pressed=true] { color: var(--accent); border-color: var(--accent); background: rgba(240, 162, 59, .12); }
+.icon-btn.power[aria-pressed=true]:hover { background: rgba(240, 162, 59, .2); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.vfd { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 8px; background: #0B0C0F; border: 1px solid #22252C; }
+.vfd-row { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--mono); font-size: 13px; letter-spacing: .08em; color: #5A606B; }
+.vfd.on .vfd-row { color: var(--accent); text-shadow: 0 0 8px rgba(240, 162, 59, .35); }
+.bars { display: flex; align-items: flex-end; gap: 3px; height: 34px; }
+.bars span { flex-grow: 1; height: 3px; border-radius: 1px; background: #2A2E37; transition: height 60ms linear; }
+.vfd.on .bars span { background: var(--accent); }
+.vfd.on .bars span.hot { background: #E5674F; }
+.msg { font-size: 12px; color: var(--err); line-height: 1.45; }
+.msg:empty { display: none; }
+.msg.info { color: var(--muted); }
+
+.main-btn { height: 48px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.main-btn:hover { filter: brightness(1.06); }
+.main-btn.stop { background: transparent; border-color: var(--off); color: var(--ink); }
+.main-btn.stop:hover { background: var(--surface); filter: none; }
+
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field-head { display: flex; justify-content: space-between; align-items: center; }
+.label { font-size: 12px; color: var(--muted); }
+.num { font-family: var(--mono); font-size: 12px; }
+.vol { display: flex; align-items: center; gap: 12px; }
+input[type=range] { -webkit-appearance: none; appearance: none; flex-grow: 1; height: 4px; border-radius: 2px; outline: none; background: linear-gradient(to right, var(--accent) var(--p, 40%), #343844 var(--p, 40%)); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #F4F5F7; border: 4px solid var(--accent); cursor: pointer; }
+input[type=range]:focus-visible { box-shadow: 0 0 0 2px rgba(240, 162, 59, .4); }
+select.src { height: 38px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface); padding: 0 10px; }
+select.src option { background: var(--surface); }
+
+.toggles { display: flex; flex-direction: column; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.tg { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; }
+.tg + .tg { border-top: 1px solid var(--line); }
+.tg-txt { display: flex; flex-direction: column; gap: 2px; }
+.tg-txt small { font-size: 11px; color: var(--muted); }
+.switch { width: 44px; height: 26px; flex-shrink: 0; border-radius: 13px; border: none; background: var(--off); display: flex; align-items: center; padding: 3px; justify-content: flex-start; transition: background .15s; }
+.switch[aria-pressed=true] { background: var(--accent); justify-content: flex-end; }
+.switch span { width: 20px; height: 20px; border-radius: 50%; background: #F4F5F7; }
+
+.foot { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); }
+.ghost { height: 30px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--line-2); background: transparent; color: var(--ink-2); font-size: 12px; }
+.ghost:hover { background: var(--surface); }
+</style>
+</head>
+<body>
+<div class="panel" id="panel">
+  <div class="head">
+    <div class="logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A1206" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+    </div>
+    <div class="title"><b>AirPlayCast</b><span>Windows 音訊 → AirPlay</span></div>
+    <div class="pill" id="pill"><i></i><span id="pillText">閒置</span></div>
+  </div>
+
+  <div class="card">
+    <div class="dev">
+      <div class="dev-ico">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C9CDD4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="10" rx="2"/><circle cx="17" cy="12" r="2.5"/><path d="M5 11h6"/><path d="M5 13.5h4"/></svg>
+      </div>
+      <div class="dev-txt">
+        <div class="dev-name" id="devName">搜尋裝置中…</div>
+        <select class="dev-name" id="devSelect" aria-label="AirPlay 裝置" hidden></select>
+        <span class="dev-sub" id="devSub">&nbsp;</span>
+      </div>
+      <button class="icon-btn power" id="power" aria-label="音響電源" title="音響電源" aria-pressed="false" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/></svg>
+      </button>
+      <button class="icon-btn" id="refresh" aria-label="重新搜尋裝置" title="重新搜尋裝置">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
+      </button>
+    </div>
+    <div class="vfd" id="vfd">
+      <div class="vfd-row"><span id="vfdLeft">STANDBY</span><span id="vfdRight">-- dB</span></div>
+      <div class="bars" id="bars"></div>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <button class="main-btn" id="main">
+    <svg id="icoPlay" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5v14l12-7z"/></svg>
+    <svg id="icoStop" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+    <span id="mainText">開始串流</span>
+  </button>
+
+  <div class="field">
+    <div class="field-head"><label class="label" for="vol">音量</label><span class="num" id="volNum">40</span></div>
+    <div class="vol">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0AA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/></svg>
+      <input id="vol" type="range" min="0" max="100" value="40">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0AA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="label" for="src">音訊來源</label>
+    <select class="src" id="src"></select>
+  </div>
+
+  <div class="toggles">
+    <div class="tg">
+      <div class="tg-txt"><span>開機時自動啟動</span><small>登入 Windows 後常駐在系統匣</small></div>
+      <button class="switch" data-key="autostart" aria-label="開機時自動啟動" aria-pressed="false"><span></span></button>
+    </div>
+    <div class="tg">
+      <div class="tg-txt"><span>停止串流時關閉音響</span><small>音響還在 AirPlay 輸入時才會關</small></div>
+      <button class="switch" data-key="standbyonstop" aria-label="停止串流時關閉音響" aria-pressed="false"><span></span></button>
+    </div>
+    <div class="tg">
+      <div class="tg-txt"><span>串流時電腦靜音</span><small>只讓音響出聲，停止後自動恢復</small></div>
+      <button class="switch" data-key="mutelocal" aria-label="串流時電腦靜音" aria-pressed="false"><span></span></button>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span id="ver">v1.0 · RAOP / ALAC 44.1 kHz</span>
+    <button class="ghost" id="quit">結束程式</button>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const host = window.chrome && window.chrome.webview;
+const send = (msg) => host && host.postMessage(msg);
+
+const SHAPE = [0.35,0.6,0.8,0.55,0.9,0.7,0.45,0.85,1,0.75,0.5,0.65,0.95,0.6,0.4,0.7,0.88,0.52,0.3,0.62,0.8,0.48,0.36,0.58,0.42,0.28,0.2,0.14];
+const bars = SHAPE.map((_, i) => {
+  const s = document.createElement('span');
+  if (i > 22) s.className = 'hot';
+  $('bars').appendChild(s);
+  return s;
+});
+
+let state = null;
+let dragging = false;
+
+function dbText(s) {
+  if (s.volume <= 0) return 'MUTE';
+  const db = s.volumeDb != null ? s.volumeDb : -30 + 30 * s.volume / 100; // receiver dB, else AirPlay dB
+  return db.toFixed(1) + ' dB';
+}
+
+function setVolUi(v) {
+  $('vol').value = v;
+  $('vol').style.setProperty('--p', v + '%');
+  $('volNum').textContent = Math.round(v);
+}
+
+function render(s) {
+  state = s;
+  const on = s.status === 'streaming';
+  const busy = s.status === 'connecting';
+  $('pill').className = 'pill ' + s.status;
+  $('pillText').textContent = { idle: '閒置', connecting: '連線中', streaming: '串流中', error: '錯誤' }[s.status];
+
+  const sel = $('devSelect');
+  if (s.devices.length > 1) {
+    sel.hidden = false; $('devName').hidden = true;
+    sel.replaceChildren(...s.devices.map(d => new Option(d.name, d.name, false, d.name === s.device)));
+  } else {
+    sel.hidden = true; $('devName').hidden = false;
+    $('devName').textContent = s.device || (s.searching ? '搜尋裝置中…' : '找不到 AirPlay 裝置');
+  }
+  const cur = s.devices.find(d => d.name === s.device);
+  const power = s.receiverOn == null ? '' : s.receiverOn ? ' · 開機中' : ' · 待機';
+  $('devSub').textContent = cur ? `${cur.ip}${cur.model ? ' · ' + cur.model : ''}${power}` : (s.deviceIp || ' ');
+  $('refresh').classList.toggle('spin', s.searching);
+  $('power').toggleAttribute('hidden', s.receiverOn == null);
+  $('power').setAttribute('aria-pressed', String(!!s.receiverOn));
+  $('power').title = s.receiverOn ? '關閉音響（待機）' : '開啟音響';
+
+  $('vfd').classList.toggle('on', on || busy);
+  $('vfdLeft').textContent = on ? 'AIRPLAY  ▶' : busy ? 'CONNECTING…' : s.status === 'error' ? 'ERROR' : 'STANDBY';
+  $('vfdRight').textContent = on ? `${dbText(s)} · ${(s.latencyMs / 1000).toFixed(1)}s` : busy ? '' : '-- dB';
+  $('msg').textContent = s.message || '';
+  $('msg').className = 'msg' + (s.status === 'error' ? '' : ' info');
+
+  const stop = on || busy;
+  $('main').classList.toggle('stop', stop);
+  $('icoPlay').toggleAttribute('hidden', stop); $('icoStop').toggleAttribute('hidden', !stop);
+  $('mainText').textContent = on ? '停止串流' : busy ? '取消連線' : '開始串流';
+
+  if (!dragging) setVolUi(s.volume);
+
+  const src = $('src');
+  if (document.activeElement !== src) src.replaceChildren(...s.sources.map(x => new Option(x.name, x.id, false, x.id === s.source)));
+
+  document.querySelectorAll('.switch').forEach(b => b.setAttribute('aria-pressed', String(!!s[b.dataset.key])));
+  $('ver').textContent = `v${s.version} · RAOP / ALAC 44.1 kHz`;
+  reportHeight();
+}
+
+let lastHeight = 0;
+function reportHeight() {
+  const h = Math.ceil($('panel').getBoundingClientRect().height);
+  if (h !== lastHeight) { lastHeight = h; send({ cmd: 'size', height: h }); }
+}
+
+function renderLevel(v) {
+  const on = state && state.status === 'streaming';
+  const t = performance.now() / 1000;
+  bars.forEach((b, i) => {
+    let h = 3;
+    if (on || v > 0.001) {
+      const wobble = 0.75 + 0.25 * Math.sin(t * 9 + i * 1.7) * Math.sin(t * 3.1 + i * 0.6);
+      h = 3 + Math.min(31, SHAPE[i] * 31 * Math.min(1, Math.sqrt(v) * 1.4) * wobble);
+    }
+    b.style.height = h.toFixed(1) + 'px';
+  });
+}
+
+$('main').onclick = () => send({ cmd: 'toggle' });
+$('refresh').onclick = () => send({ cmd: 'refresh' });
+$('power').onclick = () => send({ cmd: 'power', value: !(state && state.receiverOn) });
+$('quit').onclick = () => send({ cmd: 'quit' });
+$('devSelect').onchange = (e) => send({ cmd: 'device', value: e.target.value });
+$('src').onchange = (e) => send({ cmd: 'source', value: e.target.value });
+document.querySelectorAll('.switch').forEach(b => b.onclick = () => {
+  const v = b.getAttribute('aria-pressed') !== 'true';
+  b.setAttribute('aria-pressed', String(v));
+  send({ cmd: 'set', key: b.dataset.key, value: v });
+});
+const vol = $('vol');
+vol.oninput = () => { dragging = true; setVolUi(+vol.value); send({ cmd: 'volume', value: +vol.value }); };
+vol.onchange = () => { dragging = false; };
+vol.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const v = Math.max(0, Math.min(100, +vol.value + (e.deltaY < 0 ? 2 : -2)));
+  setVolUi(v); send({ cmd: 'volume', value: v });
+}, { passive: false });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') send({ cmd: 'hide' }); });
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+if (host) {
+  host.addEventListener('message', (e) => {
+    const m = e.data;
+    if (m.type === 'state') render(m);
+    else if (m.type === 'level') renderLevel(m.v);
+    else if (m.type === 'shown' && document.activeElement) document.activeElement.blur();
+  });
+  send({ cmd: 'ready' });
+} else {
+  // Opened directly in a browser: show sample state.
+  render({ status: 'streaming', devices: [{ name: 'RX-V477 B7DA1E', ip: '192.168.72.8', model: 'RX-V477' }], device: 'RX-V477 B7DA1E',
+    volume: 40, latencyMs: 2092, sources: [{ id: '', name: '預設輸出裝置' }], source: '', autostart: true, standbyonstop: true, mutelocal: true, receiverOn: true, version: '1.0', searching: false });
+  setInterval(() => renderLevel(0.4 + Math.random() * 0.3), 60);
+}
+</script>
+</body>
+</html>
