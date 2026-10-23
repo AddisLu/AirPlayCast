@@ -37,8 +37,8 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 
 ## 備註
 
-- **延遲約 2 秒**：這是 AirPlay 1 的標準緩衝，聽音樂沒問題，看影片會有音畫不同步。可在
-  `%LOCALAPPDATA%\AirPlayCast\settings.json` 調整 `LatencyMs`（例如 `500`），改完重開程式；太低在 Wi‑Fi 不穩時可能斷音。
+- **延遲**：面板上可選 0.25 / 0.5 / 1 / 2 秒（預設 0.5 秒，再加上音響內部約 0.1 秒）。2 秒是 AirPlay 1 的標準緩衝，最穩；
+  越短越即時（看影片比較不會音畫不同步），但 Wi‑Fi 不穩時比較容易斷音。串流中切換會自動重新連線。
 - 記錄檔：`%LOCALAPPDATA%\AirPlayCast\log.txt`
 - 音訊以 ALAC（未壓縮框架）44.1 kHz / 16-bit 立體聲傳送；RX-V477 支援不加密模式（`et=0`），所以不需要 Apple 的金鑰。
 - 解除安裝：在面板按「結束程式」，關掉「開機時自動啟動」後刪除 `%LOCALAPPDATA%\Programs\AirPlayCast`、
