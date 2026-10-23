@@ -378,7 +378,7 @@ public sealed class StreamController : IDisposable
     /// <summary>Changes the receiver-side buffer; an active stream reconnects to apply it.</summary>
     public async Task SetLatencyAsync(int ms)
     {
-        ms = Math.Clamp(ms, 200, 2000);
+        ms = Math.Clamp(ms, 100, 2000);
         if (ms == Settings.LatencyMs) return;
         Settings.LatencyMs = ms;
         Settings.Save();

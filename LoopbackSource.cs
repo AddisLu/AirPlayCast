@@ -14,8 +14,10 @@ public sealed class LoopbackSource : IDisposable
     private readonly BufferedWaveProvider _buffer;
     private readonly ISampleProvider _output;
     private readonly float[] _scratch = new float[AlacEncoder.FramesPerPacket * 2];
-    private readonly TimeSpan _minBuffered = TimeSpan.FromMilliseconds(40);
-    private readonly TimeSpan _maxBuffered = TimeSpan.FromMilliseconds(250);
+    // Everything held here adds to the end-to-end delay: keep just enough to ride out the
+    // 10 ms capture callbacks against our 8 ms packets, and trim anything beyond that.
+    private readonly TimeSpan _minBuffered = TimeSpan.FromMilliseconds(20);
+    private readonly TimeSpan _maxBuffered = TimeSpan.FromMilliseconds(80);
     private readonly bool _isFloat;
     private bool _primed;
     private float _peak;

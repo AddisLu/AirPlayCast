@@ -74,7 +74,7 @@ select.dev-name option { background: var(--surface); }
 input[type=range] { -webkit-appearance: none; appearance: none; flex-grow: 1; height: 4px; border-radius: 2px; outline: none; background: linear-gradient(to right, var(--accent) var(--p, 40%), #343844 var(--p, 40%)); }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #F4F5F7; border: 4px solid var(--accent); cursor: pointer; }
 input[type=range]:focus-visible { box-shadow: 0 0 0 2px rgba(240, 162, 59, .4); }
-.seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 3px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line-2); }
+.seg { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 3px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line-2); }
 .seg button { height: 32px; border: none; border-radius: 6px; background: transparent; color: var(--ink-2); font-size: 12px; }
 .seg button:hover { background: var(--surface-2); }
 .seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
@@ -146,8 +146,9 @@ select.src option { background: var(--surface); }
   </div>
 
   <div class="field">
-    <div class="field-head"><span class="label" id="latLabel">延遲</span><span class="hint">越短越即時，Wi‑Fi 不穩時易斷音</span></div>
+    <div class="field-head"><span class="label" id="latLabel">延遲</span><span class="hint">越短越即時，太短可能斷音</span></div>
     <div class="seg" role="group" aria-labelledby="latLabel">
+      <button data-ms="100" aria-pressed="false">0.1 秒</button>
       <button data-ms="250" aria-pressed="false">0.25 秒</button>
       <button data-ms="500" aria-pressed="false">0.5 秒</button>
       <button data-ms="1000" aria-pressed="false">1 秒</button>
