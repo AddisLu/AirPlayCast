@@ -94,6 +94,21 @@ select.src option { background: var(--surface); }
 .foot { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); }
 .ghost { height: 30px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--line-2); background: transparent; color: var(--ink-2); font-size: 12px; }
 .ghost:hover { background: var(--surface); }
+
+.tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 3px; border-radius: 10px; background: #111317; border: 1px solid var(--line); }
+.tabs button { height: 34px; border: none; border-radius: 7px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected=true] { background: var(--surface-2); color: var(--ink); }
+.pane { display: flex; flex-direction: column; gap: 14px; }
+fieldset.pane { border: none; margin: 0; padding: 0; min-width: 0; }
+fieldset.pane:disabled { opacity: .45; }
+.chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.chip { height: 36px; padding: 0 6px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; color: var(--ink-2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip:hover { background: var(--surface); }
+.chip[aria-pressed=true] { border-color: var(--accent); background: rgba(240, 162, 59, .12); color: var(--accent); font-weight: 600; }
+.tone { display: grid; grid-template-columns: 34px minmax(0, 1fr) 52px; align-items: center; gap: 10px; }
+.tone .num { text-align: right; }
+select.src:disabled { opacity: .6; }
 </style>
 </head>
 <body>
@@ -145,9 +160,15 @@ select.src option { background: var(--surface); }
     </div>
   </div>
 
+  <div class="tabs" role="tablist" aria-label="設定分頁" id="tabs" hidden>
+    <button role="tab" id="tabStream" aria-selected="true" aria-controls="paneStream">串流設定</button>
+    <button role="tab" id="tabRx" aria-selected="false" aria-controls="paneRx">音響設定</button>
+  </div>
+
+  <div class="pane" id="paneStream" role="tabpanel" aria-labelledby="tabStream">
   <div class="field">
     <div class="field-head"><span class="label" id="latLabel">延遲</span><span class="hint">越短越即時，太短可能斷音</span></div>
-    <div class="seg" role="group" aria-labelledby="latLabel">
+    <div class="seg" role="group" aria-labelledby="latLabel" id="latSeg">
       <button data-ms="100" aria-pressed="false">0.1 秒</button>
       <button data-ms="250" aria-pressed="false">0.25 秒</button>
       <button data-ms="500" aria-pressed="false">0.5 秒</button>
@@ -175,6 +196,49 @@ select.src option { background: var(--surface); }
       <button class="switch" data-key="mutelocal" aria-label="串流時電腦靜音" aria-pressed="false"><span></span></button>
     </div>
   </div>
+  </div>
+
+  <fieldset class="pane" id="paneRx" role="tabpanel" aria-labelledby="tabRx" hidden>
+    <div class="msg info" id="rxNote"></div>
+    <div class="field">
+      <label class="label" for="rxInput">輸入</label>
+      <select class="src" id="rxInput"></select>
+    </div>
+    <div class="field">
+      <label class="label" for="rxProgram">音場模式</label>
+      <select class="src" id="rxProgram"></select>
+    </div>
+    <div class="chips" role="group" aria-label="音效選項">
+      <button class="chip" data-rx="straight" aria-pressed="false" title="不套用音場效果，直接解碼">Straight</button>
+      <button class="chip" data-rx="enhancer" aria-pressed="false" title="補強壓縮音源的細節">Enhancer</button>
+      <button class="chip" data-rx="direct" aria-pressed="false" title="關閉所有音效處理，追求最佳音質">Pure Direct</button>
+      <button class="chip" data-rx="extrabass" aria-pressed="false" title="Extra Bass：重低音加強">重低音加強</button>
+      <button class="chip" data-rx="drc" aria-pressed="false" title="Adaptive DRC：小音量時讓對白更清楚">動態範圍壓縮</button>
+    </div>
+    <div class="field">
+      <div class="tone">
+        <label class="label" for="rxBass">低音</label>
+        <input id="rxBass" type="range" min="-6" max="6" step="0.5" value="0">
+        <span class="num" id="rxBassNum">0.0 dB</span>
+      </div>
+      <div class="tone">
+        <label class="label" for="rxTreble">高音</label>
+        <input id="rxTreble" type="range" min="-6" max="6" step="0.5" value="0">
+        <span class="num" id="rxTrebleNum">0.0 dB</span>
+      </div>
+    </div>
+    <div class="field">
+      <span class="label" id="sleepLabel">睡眠定時</span>
+      <div class="seg" role="group" aria-labelledby="sleepLabel" id="sleepSeg">
+        <button data-sleep="Off" aria-pressed="false">關</button>
+        <button data-sleep="30 min" aria-pressed="false">30 分</button>
+        <button data-sleep="60 min" aria-pressed="false">60 分</button>
+        <button data-sleep="90 min" aria-pressed="false">90 分</button>
+        <button data-sleep="120 min" aria-pressed="false">120 分</button>
+      </div>
+    </div>
+    <div class="msg" id="rxError"></div>
+  </fieldset>
 
   <div class="foot">
     <span id="ver">v1.0 · RAOP / ALAC 44.1 kHz</span>
@@ -245,7 +309,8 @@ function render(s) {
   $('mainText').textContent = on ? '停止串流' : busy ? '取消連線' : '開始串流';
 
   if (!dragging) setVolUi(s.volume);
-  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.ms === s.latencySetting)));
+  document.querySelectorAll('#latSeg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.ms === s.latencySetting)));
+  renderRx(s);
 
   const src = $('src');
   if (document.activeElement !== src) src.replaceChildren(...s.sources.map(x => new Option(x.name, x.id, false, x.id === s.source)));
@@ -254,6 +319,55 @@ function render(s) {
   $('ver').textContent = `v${s.version} · RAOP / ALAC 44.1 kHz`;
   reportHeight();
 }
+
+// ---- receiver settings tab
+
+let tab = 'stream';
+try { tab = localStorage.getItem('tab') || 'stream'; } catch { }
+let toneDragging = null;
+
+function showTab(name) {
+  tab = name;
+  try { localStorage.setItem('tab', name); } catch { }
+  const rx = name === 'rx' && !$('tabs').hidden;
+  $('tabStream').setAttribute('aria-selected', String(!rx));
+  $('tabRx').setAttribute('aria-selected', String(rx));
+  $('paneStream').hidden = rx;
+  $('paneRx').hidden = !rx;
+  reportHeight();
+}
+
+function setTone(id, v) {
+  $(id).value = v;
+  $(id).style.setProperty('--p', ((v + 6) / 12 * 100) + '%');
+  $(id + 'Num').textContent = (v > 0 ? '+' : '') + v.toFixed(1) + ' dB';
+}
+
+function renderRx(s) {
+  const r = s.rx;
+  $('tabs').hidden = !r;
+  if (!r) { showTab('stream'); return; }
+  $('paneRx').disabled = !s.receiverOn;
+  $('rxNote').textContent = s.receiverOn ? '' : '音響待機中，按上方電源鍵開機後才能調整。';
+
+  const input = $('rxInput');
+  if (document.activeElement !== input)
+    input.replaceChildren(...r.inputs.map(i => new Option(i.name, i.id, false, i.id === r.input)));
+  const prog = $('rxProgram');
+  if (document.activeElement !== prog)
+    prog.replaceChildren(...r.programs.map(p => new Option(p, p, false, p === r.program)));
+  // Straight and Pure Direct bypass the sound program, so it can't be picked meanwhile.
+  prog.disabled = r.straight || r.direct;
+
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(!!r[c.dataset.rx])));
+  if (toneDragging !== 'rxBass') setTone('rxBass', r.bass);
+  if (toneDragging !== 'rxTreble') setTone('rxTreble', r.treble);
+  document.querySelectorAll('#sleepSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sleep === (r.sleep || 'Off'))));
+  $('rxError').textContent = r.error || '';
+  showTab(tab);
+}
+
+const rxSend = (key, value) => send({ cmd: 'rx', key, value: String(value) });
 
 let lastHeight = 0;
 function reportHeight() {
@@ -277,9 +391,27 @@ function renderLevel(v) {
 $('main').onclick = () => send({ cmd: 'toggle' });
 $('refresh').onclick = () => send({ cmd: 'refresh' });
 $('power').onclick = () => send({ cmd: 'power', value: !(state && state.receiverOn) });
-document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+document.querySelectorAll('#latSeg button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#latSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
   send({ cmd: 'latency', value: +b.dataset.ms });
+});
+$('tabStream').onclick = () => showTab('stream');
+$('tabRx').onclick = () => showTab('rx');
+$('rxInput').onchange = (e) => rxSend('input', e.target.value);
+$('rxProgram').onchange = (e) => rxSend('program', e.target.value);
+document.querySelectorAll('.chip').forEach(c => c.onclick = () => {
+  const v = c.getAttribute('aria-pressed') !== 'true';
+  c.setAttribute('aria-pressed', String(v));
+  rxSend(c.dataset.rx, v);
+});
+['rxBass', 'rxTreble'].forEach(id => {
+  const el = $(id);
+  el.oninput = () => { toneDragging = id; setTone(id, +el.value); };
+  el.onchange = () => { toneDragging = null; rxSend(id === 'rxBass' ? 'bass' : 'treble', el.value); };
+});
+document.querySelectorAll('#sleepSeg button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#sleepSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  rxSend('sleep', b.dataset.sleep);
 });
 $('quit').onclick = () => send({ cmd: 'quit' });
 $('devSelect').onchange = (e) => send({ cmd: 'device', value: e.target.value });
@@ -311,7 +443,10 @@ if (host) {
 } else {
   // Opened directly in a browser: show sample state.
   render({ status: 'streaming', devices: [{ name: 'RX-V477 B7DA1E', ip: '192.168.72.8', model: 'RX-V477' }], device: 'RX-V477 B7DA1E',
-    volume: 40, latencyMs: 592, latencySetting: 500, sources: [{ id: '', name: '預設輸出裝置' }], source: '', autostart: true, standbyonstop: true, mutelocal: true, receiverOn: true, version: '1.0', searching: false });
+    volume: 40, latencyMs: 592, latencySetting: 500, sources: [{ id: '', name: '預設輸出裝置' }], source: '', autostart: true, standbyonstop: true, mutelocal: true, receiverOn: true, version: '1.0', searching: false,
+    rx: { input: 'AirPlay', inputs: [{ id: 'AirPlay', name: 'AirPlay' }, { id: 'HDMI1', name: 'HDMI1' }, { id: 'TUNER', name: 'TUNER' }],
+      program: '2ch Stereo', programs: ['Hall in Munich', 'Standard', '2ch Stereo', '5ch Stereo'], straight: false, enhancer: true,
+      direct: false, extrabass: true, drc: false, bass: 0, treble: -6, sleep: 'Off', error: null } });
   setInterval(() => renderLevel(0.4 + Math.random() * 0.3), 60);
 }
 </script>

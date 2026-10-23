@@ -14,6 +14,8 @@
 - 擷取 Windows 輸出音訊（WASAPI loopback），可選擇要擷取哪個輸出裝置
 - **手動連線**：只有按「開始串流」（或系統匣右鍵選單）才會連到音響；音響會自己開機並切到 AirPlay 輸入
 - **音響電源鍵**（Yamaha）：面板裝置卡片上的電源鍵、或系統匣右鍵選單可開機／關成待機
+- **音響設定分頁**（Yamaha）：輸入切換、音場模式 (DSP)、Straight / Enhancer / Pure Direct、重低音加強、
+  動態範圍壓縮 (Adaptive DRC)、低音 / 高音、睡眠定時；用遙控器改的設定也會同步回面板
 - **停止串流時關閉音響**（Yamaha）：停止串流後，如果音響還停在 AirPlay 輸入就自動待機；已切去看電視等其他輸入則不會關
 - **串流時電腦靜音**：串流期間把電腦本機喇叭靜音，停止後自動恢復（程式當掉，下次啟動也會恢復）
 - 音量滑桿直接控制音響音量（可用滑鼠滾輪）。Yamaha 擴大機會改走它的網路控制 API 調主音量
@@ -62,7 +64,7 @@ dotnet bin/Debug/net10.0-windows/AirPlayCast.dll --console --host 192.168.72.8 -
 | `LoopbackSource.cs` | WASAPI loopback 擷取、重新取樣成 44.1 kHz |
 | `MdnsBrowser.cs` | mDNS 搜尋 AirPlay 裝置 |
 | `StreamController.cs` | 串流狀態、本機靜音、裝置切換、音響電源與音量 |
-| `YamahaControl.cs` | Yamaha 網路控制 API（電源、主音量、靜音） |
+| `YamahaControl.cs` | Yamaha 網路控制 API（電源、音量、輸入、音場模式、音效選項、睡眠定時） |
 | `TrayContext.cs` / `PanelForm.cs` | 系統匣圖示與 WebView2 彈出面板 |
 | `ui/index.html` | 面板介面（依 Claude Design 設計稿實作） |
 | `Settings.cs` | 設定檔、開機啟動、記錄 |

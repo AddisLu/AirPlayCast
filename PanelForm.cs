@@ -95,6 +95,7 @@ public sealed class PanelForm : Form
                 case "refresh": await _ctl.RefreshDevicesAsync(); break;
                 case "power": await _ctl.SetReceiverPowerAsync((bool)m["value"]!); break;
                 case "latency": await _ctl.SetLatencyAsync((int)m["value"]!); break;
+                case "rx": await _ctl.SetReceiverOptionAsync((string)m["key"]!, (string)m["value"]!); break;
                 case "device": await _ctl.SelectDeviceAsync((string)m["value"]!); break;
                 case "source": _ctl.SelectSource((string?)m["value"]); break;
                 case "volume": _ctl.SetVolume((double)m["value"]!); break;
@@ -141,9 +142,35 @@ public sealed class PanelForm : Form
             ["autostart"] = Autostart.IsEnabled,
             ["standbyonstop"] = _ctl.Settings.StandbyOnStop,
             ["receiverOn"] = _ctl.ReceiverOn,
+            ["rx"] = ReceiverJson(),
             ["mutelocal"] = _ctl.Settings.MuteLocal,
             ["version"] = Application.ProductVersion.Split('+')[0],
         });
+    }
+
+    /// <summary>The receiver's sound settings for the "音響設定" tab, or null when it isn't a Yamaha.</summary>
+    private JsonNode? ReceiverJson()
+    {
+        if (_ctl.Receiver is not { } r) return null;
+        var inputs = _ctl.ReceiverInputs.Select(i => (JsonNode)new JsonObject { ["id"] = i.Param, ["name"] = i.Title }).ToList();
+        var programs = YamahaControl.Programs.ToList();
+        if (r.Program != null && !programs.Contains(r.Program)) programs.Add(r.Program); // trust what the receiver reports
+        return new JsonObject
+        {
+            ["input"] = r.Input,
+            ["inputs"] = new JsonArray(inputs.ToArray()),
+            ["program"] = r.Program,
+            ["programs"] = new JsonArray(programs.Select(p => (JsonNode)JsonValue.Create(p)!).ToArray()),
+            ["straight"] = r.Straight,
+            ["enhancer"] = r.Enhancer,
+            ["direct"] = r.Direct,
+            ["extrabass"] = r.ExtraBass,
+            ["drc"] = r.AdaptiveDrc,
+            ["bass"] = r.Bass,
+            ["treble"] = r.Treble,
+            ["sleep"] = r.Sleep,
+            ["error"] = _ctl.ReceiverError,
+        };
     }
 
     private void Post(JsonNode msg)

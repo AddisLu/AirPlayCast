@@ -334,6 +334,31 @@ public sealed class StreamController : IDisposable
     /// <summary>Receiver power (true = on, false = standby); null when it isn't a controllable Yamaha.</summary>
     public bool? ReceiverOn { get; private set; }
 
+    /// <summary>Last state read from the receiver (input, sound program, tone...); null when not a Yamaha.</summary>
+    public YamahaControl.Status? Receiver { get; private set; }
+    public List<YamahaControl.InputItem> ReceiverInputs { get; private set; } = [];
+    /// <summary>Why the last sound-setting change failed, until the next one succeeds.</summary>
+    public string? ReceiverError { get; private set; }
+
+    public async Task SetReceiverOptionAsync(string key, string value)
+    {
+        if (_yamaha is not { } y) return;
+        try
+        {
+            await y.SetOptionAsync(key, value);
+            ReceiverError = null;
+            Log.Write($"Receiver {key} -> {value}");
+        }
+        catch (Exception ex)
+        {
+            ReceiverError = $"設定失敗：{ex.Message}";
+            Log.Write($"Receiver {key} -> {value} failed: {ex.Message}");
+        }
+        _lastReceiverPoll = Environment.TickCount64;
+        await SyncFromReceiverAsync();
+        Notify();
+    }
+
     private double MinDb => -80;
     private double MaxDb => Math.Clamp(Settings.YamahaMaxDb, -60, 16.5);
 
@@ -346,6 +371,13 @@ public sealed class StreamController : IDisposable
         _yamaha = await YamahaControl.TryCreateAsync(address);
         VolumeDb = null;
         ReceiverOn = null;
+        Receiver = null;
+        ReceiverInputs = [];
+        if (_yamaha != null)
+        {
+            try { ReceiverInputs = await _yamaha.GetInputsAsync(); }
+            catch (Exception ex) { Log.Write($"Reading receiver inputs failed: {ex.Message}"); }
+        }
         Log.Write(_yamaha != null ? "Yamaha network control available: volume goes to the receiver's master volume" : "No Yamaha API: using AirPlay volume");
     }
 
@@ -359,8 +391,9 @@ public sealed class StreamController : IDisposable
         YamahaControl.Status? s;
         try { s = await y.GetStatusAsync(); } catch { return; }
         if (s == null) return;
-        bool changed = ReceiverOn != s.PowerOn;
+        bool changed = ReceiverOn != s.PowerOn || Receiver != s;
         ReceiverOn = s.PowerOn;
+        Receiver = s;
 
         bool userBusy = !force && Environment.TickCount64 - _lastUserVolumeAt < 2500;
         double p = s.Muted ? 0 : DbToPercent(s.Db);
