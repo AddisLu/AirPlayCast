@@ -60,8 +60,12 @@ dotnet bin/Debug/net10.0-windows/AirPlayCast.dll --console --host 192.168.72.8 -
 | `AlacEncoder.cs` | 產生 ALAC 未壓縮框架 |
 | `LoopbackSource.cs` | WASAPI loopback 擷取、重新取樣成 44.1 kHz |
 | `MdnsBrowser.cs` | mDNS 搜尋 AirPlay 裝置 |
-| `StreamController.cs` | 串流狀態、自動串流、本機靜音、裝置切換、音量 |
+| `StreamController.cs` | 串流狀態、本機靜音、裝置切換、音響電源與音量 |
 | `YamahaControl.cs` | Yamaha 網路控制 API（電源、主音量、靜音） |
 | `TrayContext.cs` / `PanelForm.cs` | 系統匣圖示與 WebView2 彈出面板 |
 | `ui/index.html` | 面板介面（依 Claude Design 設計稿實作） |
 | `Settings.cs` | 設定檔、開機啟動、記錄 |
+
+## 授權
+
+[MIT](LICENSE)
